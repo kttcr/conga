@@ -479,13 +479,13 @@ def filter_normalize_and_hvg(
     #add percent_mito and n_counts to obs
     mito_genesA = (adata.var_names.str.startswith('MT-') |
                    adata.var_names.str.startswith('mt-'))
-    adata.obs['percent_mito'] = (np.sum(adata[:, mito_genesA].X, axis=1).A1 /
-                                 np.sum(adata.X, axis=1).A1)
-    adata.obs['n_counts'] = adata.X.sum(axis=1).A1
+
+    adata.var['mt'] = mito_genesA
+    sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True)
 
     if outfile_prefix_for_qc_plots is not None:
         pngfile = outfile_prefix_for_qc_plots+'_qc_violins.png'
-        sc.pl.violin(adata, ['n_genes', 'n_counts', 'percent_mito'],
+        sc.pl.violin(adata, ['n_genes', 'total_counts', 'pct_counts_mt'],
                      jitter=0.4, multi_panel=True, show=False)
         print('making:', pngfile)
         plt.savefig(pngfile)
@@ -493,10 +493,10 @@ def filter_normalize_and_hvg(
 
         pngfile = outfile_prefix_for_qc_plots+'_counts_vs_genes.png'
         plt.figure(figsize=(8,8))
-        plt.scatter(adata.obs['n_counts'], adata.obs['n_genes'], s=5,
-                    c=adata.obs['percent_mito'])
+        plt.scatter(adata.obs['total_counts'], adata.obs['n_genes'], s=5,
+                    c=adata.obs['pct_counts_mt'])
         plt.colorbar()
-        plt.xlabel('n_counts')
+        plt.xlabel('total_counts')
         plt.ylabel('n_genes')
         plt.tight_layout()
         print('making:', pngfile)
@@ -511,8 +511,8 @@ def filter_normalize_and_hvg(
           'genes')
     adata.uns['conga_stats']['num_filt_max_genes_per_cell'] = num_filt
 
-    num_filt = np.sum(adata.obs['percent_mito'] >= max_percent_mito)
-    adata     = adata[adata.obs['percent_mito']  < max_percent_mito, :].copy()
+    num_filt = np.sum(adata.obs['pct_counts_mt'] >= max_percent_mito)
+    adata     = adata[adata.obs['pct_counts_mt']  < max_percent_mito, :].copy()
     print(f'filtered out {num_filt} cells with more than {max_percent_mito}',
           'percent mito')
     adata.uns['conga_stats']['num_filt_max_percent_mito'] = num_filt
@@ -799,7 +799,7 @@ def filter_and_scale(
 
 
     ## should consider adding cell cycle here:
-    sc.pp.regress_out(adata, ['n_counts','percent_mito'])
+    sc.pp.regress_out(adata, ['total_counts','pct_counts_mt'])
 
     sc.pp.scale(adata, max_value=10)
 
