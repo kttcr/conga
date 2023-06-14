@@ -1199,8 +1199,8 @@ def calc_nbrs(
         print('compute D', tag, adata.shape[0])
         D = pairwise_distances( adata.obsm[obsm_tag], metric='euclidean' )
         for ii,(a,b) in enumerate(zip(agroups, bgroups)):
-            D[ii, (agroups==a) ] = 1e3
-            D[ii, (bgroups==b) ] = 1e3
+            D[ii, (agroups==a) ] = D.max()
+            D[ii, (bgroups==b) ] = D.max()
 
         for nbr_frac in nbr_fracs:
             num_neighbors = max(1, int(nbr_frac*adata.shape[0]))
